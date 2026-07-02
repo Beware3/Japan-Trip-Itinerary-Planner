@@ -218,7 +218,7 @@
         </div>
 
         <!-- Quick Chips -->
-        <sc-if value="{{ hasKey }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ showChips }}" hint-placeholder-val="{{ true }}">
           <div style="padding:8px 12px;display:flex;gap:6px;overflow-x:auto;background:transparent;border-top:1px solid rgba(36,31,27,0.04);white-space:nowrap;flex:none;">
             <button onClick="{{ askWhatsNext }}" style="flex:none;font-size:11px;color:#c8462f;background:rgba(200,70,47,0.06);border:1px solid rgba(200,70,47,0.15);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:inherit;">What should we do now?</button>
             <button onClick="{{ askFoodSuggestions }}" style="flex:none;font-size:11px;color:#c8462f;background:rgba(200,70,47,0.06);border:1px solid rgba(200,70,47,0.15);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:inherit;">Suggest dinner spots</button>
@@ -284,10 +284,24 @@ class Component extends DCLogic {
     messages: [
       { sender: 'AI Guide', text: 'Konnichiwa! I am your Japan Travel Assistant. Ask me anything about your itinerary or what to do next today!', isBot: true }
     ],
-    isTyping: false
+    isTyping: false,
+    localAiReady: false
   };
 
   componentDidMount(){
+    if (window.ai && window.ai.languageModel) {
+      window.ai.languageModel.capabilities().then(cap => {
+        if (cap.available === 'readily') {
+          this.setState({ localAiReady: true });
+          this.setState({
+            messages: [
+              { sender: 'AI Guide', text: 'Konnichiwa! I am your Japan Travel Assistant. On-device local AI (Gemini Nano) detected! You can chat directly inside the app, zero setup required.', isBot: true }
+            ]
+          });
+        }
+      }).catch(e => console.log("Local AI capability check failed:", e));
+    }
+
     const ref = db.ref('itinerary');
     ref.on('value', (snapshot) => {
       let days = snapshot.val();
@@ -381,11 +395,50 @@ class Component extends DCLogic {
 
     this.setState({
       messages: newMessages,
-      inputText: '',
-      isTyping: true
+      inputText: ''
     });
 
-    this.callGemini(text, newMessages);
+    const hasKey = !!this.state.apiKey;
+    const hasLocalAi = this.state.localAiReady;
+
+    if (hasKey || hasLocalAi) {
+      this.setState({ isTyping: true });
+      this.callGemini(text, newMessages);
+    } else {
+      this.exportToGeminiWeb(text, newMessages);
+    }
+  }
+
+  exportToGeminiWeb(text, history){
+    const systemPrompt = `You are a friendly, helpful AI Japan Tour Guide helping group members navigate their trip.
+I have a question about my trip: "${text}"
+
+Please answer my question based on my live itinerary below. If my question is vague, ask clarifying questions first to understand my vibe, budget, or day!
+
+Live Itinerary:
+${JSON.stringify(this.state.days)}
+`;
+
+    navigator.clipboard.writeText(systemPrompt).then(() => {
+      this.setState({
+        messages: [
+          ...history,
+          {
+            sender: 'AI Guide',
+            text: `📋 Itinerary & question copied to clipboard!\n\nI'm opening Google Gemini in a new tab. Just paste (Ctrl+V) and press Enter to chat using your free Google account.`,
+            isBot: true
+          }
+        ]
+      });
+      window.open('https://gemini.google.com/app', '_blank');
+    }).catch(err => {
+      this.setState({
+        messages: [
+          ...history,
+          { sender: 'AI Guide', text: `Failed to copy to clipboard: ${err.message}. Please copy the prompt manually.`, isBot: true }
+        ]
+      });
+    });
   }
 
   askWhatsNext(){
@@ -405,15 +458,7 @@ class Component extends DCLogic {
 
   callGemini(text, history){
     const apiKey = this.state.apiKey;
-    if (!apiKey) {
-      this.setState({
-        isTyping: false,
-        messages: [...history, { sender: 'AI Guide', text: 'Error: API Key is missing. Please click the gear ⚙ icon in the header and paste your Gemini API key.', isBot: true }]
-      });
-      return;
-    }
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const hasLocalAi = this.state.localAiReady;
 
     const systemPrompt = `You are a friendly, helpful AI Japan Tour Guide helping group members navigate their trip.
 You have access to their live, collaborative itinerary and the current local date/time.
@@ -431,44 +476,59 @@ Current Date/Time:
 ${new Date().toLocaleString()}
 `;
 
-    const contents = [
-      {
-        role: 'user',
-        parts: [{ text: systemPrompt }]
-      },
-      ...history.map(msg => ({
-        role: msg.isBot ? 'model' : 'user',
-        parts: [{ text: msg.text }]
-      }))
-    ];
+    if (apiKey) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const contents = [
+        { role: 'user', parts: [{ text: systemPrompt }] },
+        ...history.map(msg => ({
+          role: msg.isBot ? 'model' : 'user',
+          parts: [{ text: msg.text }]
+        }))
+      ];
 
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ contents })
-    })
-    .then(r => r.json())
-    .then(data => {
-      let reply = 'Sorry, I encountered an error processing that.';
-      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
-        reply = data.candidates[0].content.parts[0].text;
-      } else if (data.error) {
-        reply = `Error: ${data.error.message}`;
-      }
-      this.setState({
-        isTyping: false,
-        messages: [...history, { sender: 'AI Guide', text: reply, isBot: true }]
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents })
+      })
+      .then(r => r.json())
+      .then(data => {
+        let reply = 'Sorry, I encountered an error processing that.';
+        if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+          reply = data.candidates[0].content.parts[0].text;
+        } else if (data.error) {
+          reply = `Error: ${data.error.message}`;
+        }
+        this.setState({
+          isTyping: false,
+          messages: [...history, { sender: 'AI Guide', text: reply, isBot: true }]
+        });
+      })
+      .catch(err => {
+        this.setState({
+          isTyping: false,
+          messages: [...history, { sender: 'AI Guide', text: `Failed to connect: ${err.message}`, isBot: true }]
+        });
       });
-    })
-    .catch(err => {
-      console.error(err);
-      this.setState({
-        isTyping: false,
-        messages: [...history, { sender: 'AI Guide', text: `Failed to connect: ${err.message}`, isBot: true }]
+    } else if (hasLocalAi) {
+      window.ai.languageModel.create({
+        systemPrompt: systemPrompt
+      }).then(session => {
+        const contextPrompt = history.map(msg => `${msg.isBot ? 'AI Guide' : 'User'}: ${msg.text}`).join('\n') + `\nAI Guide:`;
+        return session.prompt(contextPrompt).then(reply => {
+          this.setState({
+            isTyping: false,
+            messages: [...history, { sender: 'AI Guide', text: reply, isBot: true }]
+          });
+          session.destroy();
+        });
+      }).catch(err => {
+        this.setState({
+          isTyping: false,
+          messages: [...history, { sender: 'AI Guide', text: `Local AI Error: ${err.message}`, isBot: true }]
+        });
       });
-    });
+    }
   }
 
   txt(e){ return e.target.innerText.trim(); }
@@ -480,10 +540,19 @@ ${new Date().toLocaleString()}
     if (!this.state.days) return { loading:true, days:[], crew, resetAll:()=>this.reset() };
 
     const hasKey = !!this.state.apiKey;
-    const sendDisabled = this.state.isTyping || !this.state.inputText.trim() || !hasKey;
+    const hasLocalAi = this.state.localAiReady;
+    const showChips = true;
+
+    const sendDisabled = this.state.isTyping || !this.state.inputText.trim();
     const sendBtnBg = sendDisabled ? '#d5c4b1' : '#c8462f';
-    const inputDisabled = this.state.isTyping || !hasKey;
-    const inputPlaceholder = hasKey ? "Ask something about today's plan..." : "Set API Key in settings ⚙ first";
+    const inputDisabled = this.state.isTyping;
+
+    let inputPlaceholder = "Ask or export to Gemini Web...";
+    if (hasLocalAi) {
+      inputPlaceholder = "Ask local AI Guide...";
+    } else if (hasKey) {
+      inputPlaceholder = "Ask Cloud AI Guide...";
+    }
 
     const messages = this.state.messages.map(msg => ({
       ...msg,
@@ -530,7 +599,7 @@ ${new Date().toLocaleString()}
         }),
       };
     }).filter(Boolean);
-    return { loading:false, days, crew, resetAll:()=>this.reset(), chatOpen:this.state.chatOpen, chatClosed:!this.state.chatOpen, showSettings:this.state.showSettings, apiKey:this.state.apiKey, messages, isTyping:this.state.isTyping, inputText:this.state.inputText, hasKey, sendDisabled, sendBtnBg, inputDisabled, inputPlaceholder, toggleChat:()=>this.toggleChat(), toggleSettings:()=>this.toggleSettings(), onInputChange:(e)=>this.onInputChange(e), onApiKeyChange:(e)=>this.onApiKeyChange(e), saveApiKey:()=>this.saveApiKey(), handleInputKey:(e)=>this.handleInputKey(e), sendChat:()=>this.sendChat(), askWhatsNext:()=>this.askWhatsNext(), askFoodSuggestions:()=>this.askFoodSuggestions(), askTransitHelp:()=>this.askTransitHelp() };
+    return { loading:false, days, crew, resetAll:()=>this.reset(), chatOpen:this.state.chatOpen, chatClosed:!this.state.chatOpen, showSettings:this.state.showSettings, apiKey:this.state.apiKey, messages, isTyping:this.state.isTyping, inputText:this.state.inputText, hasKey, showChips, sendDisabled, sendBtnBg, inputDisabled, inputPlaceholder, toggleChat:()=>this.toggleChat(), toggleSettings:()=>this.toggleSettings(), onInputChange:(e)=>this.onInputChange(e), onApiKeyChange:(e)=>this.onApiKeyChange(e), saveApiKey:()=>this.saveApiKey(), handleInputKey:(e)=>this.handleInputKey(e), sendChat:()=>this.sendChat(), askWhatsNext:()=>this.askWhatsNext(), askFoodSuggestions:()=>this.askFoodSuggestions(), askTransitHelp:()=>this.askTransitHelp() };
   }
 }
 </script>

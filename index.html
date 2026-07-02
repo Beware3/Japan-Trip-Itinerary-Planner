@@ -213,8 +213,17 @@ class Component extends DCLogic {
   componentDidMount(){
     const ref = db.ref('itinerary');
     ref.on('value', (snapshot) => {
-      const days = snapshot.val();
+      let days = snapshot.val();
+      if (days && !Array.isArray(days)) {
+        days = Object.values(days); // handle Firebase sparse array conversion
+      }
       if (days && days.length) {
+        // Firebase completely removes empty arrays, so we must restore them to prevent length errors
+        days = days.map(d => ({
+          ...d,
+          items: d.items || [],
+          suggestions: d.suggestions || []
+        }));
         this.setState({ days });
       } else {
         import('./itinerary-data.js').then(m => {

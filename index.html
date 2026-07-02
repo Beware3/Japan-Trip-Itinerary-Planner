@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -162,7 +164,7 @@
   <!-- footer -->
   <div style="text-align:center;margin-top:26px;color:#8a7d6c;">
     <div style="font-family:'Yuji Syuku',serif;font-size:22px;color:#c8462f;">良い旅を</div>
-    <div style="font-size:11.5px;margin-top:4px;">Have a good trip · edits save on this device</div>
+    <div style="font-size:11.5px;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;">Have a good trip <span style="display:inline-block;width:6px;height:6px;background:#4f7a4a;border-radius:50%;box-shadow:0 0 6px #4f7a4a;"></span> Live Sync Enabled</div>
     <button onClick="{{ resetAll }}" style="margin-top:12px;border:1px solid rgba(36,31,27,.15);background:transparent;color:#8a7d6c;border-radius:20px;padding:6px 16px;font-size:11.5px;cursor:pointer;font-family:inherit;">Reset to original plan</button>
   </div>
 
@@ -171,6 +173,18 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 const KEY = 'jp-itin-2026-v1';
+
+const firebaseConfig = {
+  projectId: "japan-trip-planner-33590",
+  appId: "1:279386875534:web:867ae44db7bda7d477cbdf",
+  storageBucket: "japan-trip-planner-33590.firebasestorage.app",
+  apiKey: "AIzaSyCmzlUEpwZ3o46CrW01WFJbJr2Mhsyi6CM",
+  authDomain: "japan-trip-planner-33590.firebaseapp.com",
+  messagingSenderId: "279386875534",
+  databaseURL: "https://japan-trip-planner-33590-default-rtdb.firebaseio.com",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 const CITY = {
   Tokyo: { accent:'#1f3a52', accentDark:'#132635', accentShadow:'rgba(31,58,82,.5)' },
@@ -197,17 +211,25 @@ class Component extends DCLogic {
   state = { days: null };
 
   componentDidMount(){
-    let days = null;
-    try { const raw = localStorage.getItem(KEY); if (raw) days = JSON.parse(raw); } catch(e){}
-    if (days && days.length) { this.setState({ days }); return; }
-    import('./itinerary-data.js').then(m => {
-      this.setState({ days: JSON.parse(JSON.stringify(m.DEFAULT_DAYS)) });
+    const ref = db.ref('itinerary');
+    ref.on('value', (snapshot) => {
+      const days = snapshot.val();
+      if (days && days.length) {
+        this.setState({ days });
+      } else {
+        import('./itinerary-data.js').then(m => {
+          this.setState({ days: JSON.parse(JSON.stringify(m.DEFAULT_DAYS)) });
+        });
+      }
     });
   }
 
   uid(){ return 'n' + Math.random().toString(36).slice(2,8); }
 
-  save(days){ try { localStorage.setItem(KEY, JSON.stringify(days)); } catch(e){} this.setState({ days }); }
+  save(days){ 
+    this.setState({ days });
+    db.ref('itinerary').set(days); 
+  }
   mutate(fn){ const days = this.state.days.map(d => ({...d})); fn(days); this.save(days); }
   findDay(days,id){ return days.find(d => d.id===id); }
 
@@ -223,8 +245,11 @@ class Component extends DCLogic {
 
   reset(){
     if (!confirm('Reset the whole plan back to the original suggestions? Your edits will be lost.')) return;
-    localStorage.removeItem(KEY);
-    import('./itinerary-data.js').then(m => this.setState({ days: JSON.parse(JSON.stringify(m.DEFAULT_DAYS)) }));
+    import('./itinerary-data.js').then(m => {
+      const defaults = JSON.parse(JSON.stringify(m.DEFAULT_DAYS));
+      this.setState({ days: defaults });
+      db.ref('itinerary').set(defaults);
+    });
   }
 
   txt(e){ return e.target.innerText.trim(); }

@@ -218,8 +218,8 @@ class Component extends DCLogic {
         days = Object.values(days); // handle Firebase sparse array conversion
       }
       if (days && days.length) {
-        // Firebase completely removes empty arrays, so we must restore them to prevent length errors
-        days = days.map(d => ({
+        // Filter out null/undefined elements (sparse array holes) and restore empty arrays
+        days = days.filter(Boolean).map(d => ({
           ...d,
           items: d.items || [],
           suggestions: d.suggestions || []
@@ -276,6 +276,7 @@ class Component extends DCLogic {
     if (!this.state.days) return { loading:true, days:[], crew, resetAll:()=>this.reset() };
 
     const days = this.state.days.map(d => {
+      if (!d) return null;
       const c = CITY[d.city] || CITY.Tokyo;
       const parts = (d.date||'').split(' ');
       return {
@@ -283,8 +284,8 @@ class Component extends DCLogic {
         num: parts[1]||'', mon: parts[0]||'',
         accent:c.accent, accentDark:c.accentDark, accentShadow:c.accentShadow,
         hasStay: !!d.stay, noStay: !d.stay,
-        noItems: d.items.length===0,
-        hasSug: d.suggestions.length>0,
+        noItems: (d.items || []).length===0,
+        hasSug: (d.suggestions || []).length>0,
         onTitle:(e)=>this.setField(d.id,'title',this.txt(e)),
         onArea:(e)=>this.setField(d.id,'area',this.txt(e)),
         onStayName:(e)=>this.setStay(d.id,'name',this.txt(e)),
@@ -294,19 +295,19 @@ class Component extends DCLogic {
         addStay:()=>this.addStay(d.id),
         removeStay:()=>this.removeStay(d.id),
         addItem:()=>this.addItem(d.id),
-        items: d.items.map(it => ({
+        items: (d.items || []).map(it => ({
           ...it,
           onTime:(e)=>this.setItem(d.id,it.id,'time',this.txt(e)),
           onText:(e)=>this.setItem(d.id,it.id,'text',this.txt(e)),
           onCost:(e)=>this.setItem(d.id,it.id,'cost',this.txt(e)),
           remove:()=>this.removeItem(d.id,it.id),
         })),
-        suggestions: d.suggestions.map(s => {
+        suggestions: (d.suggestions || []).map(s => {
           const t = transitStyle(s.transit); const co = costStyle(s.cost);
           return { ...s, tShort:t.label, tColor:t.c, cost:co.text, cColor:co.color, cBg:co.bg, add:()=>this.addSug(d.id,s) };
         }),
       };
-    });
+    }).filter(Boolean);
     return { loading:false, days, crew, resetAll:()=>this.reset() };
   }
 }

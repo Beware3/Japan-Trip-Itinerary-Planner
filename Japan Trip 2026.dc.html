@@ -219,8 +219,14 @@ class Component extends DCLogic {
       } else {
         import('./itinerary-data.js').then(m => {
           this.setState({ days: JSON.parse(JSON.stringify(m.DEFAULT_DAYS)) });
-        });
+        }).catch(err => console.error("Import failed:", err));
       }
+    }, (error) => {
+      console.error("Firebase Read Error:", error);
+      alert("Database Error: " + error.message + "\n\nPlease ensure you clicked 'Create Database' in Firebase Realtime Database and set the rules to 'Test Mode' (public read/write).");
+      import('./itinerary-data.js').then(m => {
+        this.setState({ days: JSON.parse(JSON.stringify(m.DEFAULT_DAYS)) });
+      });
     });
   }
 

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Yuji+Syuku&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{background:#e2d7bf;font-family:'Zen Kaku Gothic New',sans-serif;color:#241f1b;}
+  [contenteditable]{cursor:text;border-radius:6px;transition:background .15s;}
+  [contenteditable]:hover{background:rgba(200,70,47,.06);}
+  [contenteditable]:focus{outline:none;background:rgba(200,70,47,.1);box-shadow:0 0 0 2px rgba(200,70,47,.25);}
+  ::selection{background:#c8462f;color:#fff;}
+  @keyframes drift{from{transform:translateX(-30px)}to{transform:translateX(30px)}}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .lift{transition:transform .25s cubic-bezier(.2,.7,.3,1),box-shadow .25s;}
+  .lift:hover{transform:translateY(-4px);}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;justify-content:center;background:radial-gradient(120% 60% at 50% 0%,#efe6d0 0%,#e2d7bf 55%,#d8ccb0 100%);padding:0 0 60px;">
+<div style="width:min(560px,100%);padding:0 14px;">
+
+  <!-- ===== HERO ===== -->
+  <div style="position:relative;margin-top:16px;border-radius:26px;overflow:hidden;height:300px;background:linear-gradient(180deg,#f7dcae 0%,#f0c0a2 48%,#e39f8e 78%,#cf8577 100%);box-shadow:0 26px 44px -22px rgba(90,50,40,.65),inset 0 1px 0 rgba(255,255,255,.4);perspective:900px;">
+    <!-- sun -->
+    <div style="position:absolute;top:34px;left:50%;transform:translateX(-50%);width:132px;height:132px;border-radius:50%;background:radial-gradient(circle at 50% 42%,#ffefe0,#f4795f 60%,#d64a34);box-shadow:0 0 60px 12px rgba(214,74,52,.4);"></div>
+    <!-- clouds -->
+    <div style="position:absolute;top:70px;left:26px;width:80px;height:12px;border-radius:12px;background:rgba(255,255,255,.55);animation:drift 9s ease-in-out infinite alternate;"></div>
+    <div style="position:absolute;top:112px;right:30px;width:110px;height:13px;border-radius:12px;background:rgba(255,255,255,.45);animation:drift 12s ease-in-out infinite alternate-reverse;"></div>
+    <!-- far ridge -->
+    <div style="position:absolute;bottom:0;left:0;right:0;height:150px;background:#7a6f8a;opacity:.5;clip-path:polygon(0 60%,18% 42%,34% 58%,52% 34%,70% 56%,86% 40%,100% 60%,100% 100%,0 100%);"></div>
+    <!-- fuji -->
+    <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:0;border-left:150px solid transparent;border-right:150px solid transparent;border-bottom:184px solid #2e4a63;"></div>
+    <div style="position:absolute;bottom:150px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:37px solid transparent;border-right:37px solid transparent;border-bottom:34px solid #f4efe6;filter:drop-shadow(0 2px 0 #dfd7c6);"></div>
+    <!-- near ground -->
+    <div style="position:absolute;bottom:0;left:0;right:0;height:70px;background:linear-gradient(#3d5a4a,#2c4436);clip-path:polygon(0 40%,25% 20%,55% 42%,80% 22%,100% 44%,100% 100%,0 100%);"></div>
+    <!-- title band -->
+    <div style="position:absolute;left:0;right:0;bottom:0;padding:44px 20px 18px;background:linear-gradient(transparent,rgba(20,14,12,.55)55%,rgba(20,14,12,.78));">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-family:'Yuji Syuku',serif;color:#ffd9c2;font-size:15px;letter-spacing:3px;">日本 · 2026</div>
+          <div style="font-family:'Shippori Mincho B1',serif;font-weight:800;font-size:27px;color:#fff;line-height:1.05;text-shadow:0 2px 12px rgba(0,0,0,.4);">Tokyo · Kyoto · Nara</div>
+          <div style="color:rgba(255,255,255,.82);font-size:12.5px;margin-top:3px;">29 Aug – 08 Sep · 11 days</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div style="display:flex;">
+            <sc-for list="{{ crew }}" as="c" hint-placeholder-count="5">
+              <div style="width:26px;height:26px;border-radius:50%;margin-left:-8px;border:2px solid rgba(255,255,255,.85);background:{{ c.bg }};color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">{{ c.k }}</div>
+            </sc-for>
+          </div>
+          <div style="font-size:10.5px;color:rgba(255,255,255,.8);letter-spacing:.5px;">Party of 5</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- hint -->
+  <div style="display:flex;align-items:center;gap:8px;margin:14px 4px 2px;color:#6a5f52;font-size:12px;">
+    <span style="flex:none;width:16px;height:16px;border-radius:5px;background:#c8462f;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;">✎</span>
+    <span>Tap any heading, plan or accommodation to edit. Suggestions are budget-friendly and reachable on foot, metro or train.</span>
+  </div>
+
+  <!-- ===== DAYS ===== -->
+  <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
+    <div style="text-align:center;padding:40px;color:#8a7d6c;font-family:'Shippori Mincho B1',serif;">Unrolling the map…</div>
+  </sc-if>
+
+  <div style="perspective:1600px;">
+    <sc-for list="{{ days }}" as="day" hint-placeholder-count="4">
+      <div class="lift" style="position:relative;margin:20px 0;background:#fffdf7;border-radius:20px;padding:16px 15px 18px;border-top:3px solid {{ day.accent }};box-shadow:0 6px 0 -1px #e9dfc7,0 24px 36px -22px rgba(60,42,30,.6),0 2px 6px rgba(0,0,0,.05);transform-style:preserve-3d;">
+        <!-- header -->
+        <div style="display:flex;gap:13px;align-items:flex-start;">
+          <div style="flex:none;width:58px;height:66px;border-radius:14px;background:linear-gradient(158deg,{{ day.accent }},{{ day.accentDark }});color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 14px -6px {{ day.accentShadow }};transform:translateZ(26px);">
+            <span style="font-family:'Shippori Mincho B1',serif;font-size:23px;font-weight:800;line-height:1;">{{ day.num }}</span>
+            <span style="font-size:10px;letter-spacing:1.5px;opacity:.9;margin-top:2px;">{{ day.mon }}</span>
+            <span style="font-size:9px;letter-spacing:1px;opacity:.72;margin-top:3px;text-transform:uppercase;">{{ day.dow }}</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px;">
+              <span style="font-family:'Yuji Syuku',serif;font-size:13px;color:{{ day.accent }};letter-spacing:1px;">{{ day.city }}</span>
+              <span style="color:#b7ab97;">·</span>
+              <span contenteditable="true" onBlur="{{ day.onArea }}" style="font-size:11.5px;color:#8a7d6c;">{{ day.area }}</span>
+            </div>
+            <div contenteditable="true" onBlur="{{ day.onTitle }}" style="font-family:'Shippori Mincho B1',serif;font-weight:700;font-size:19.5px;line-height:1.25;color:#241f1b;">{{ day.title }}</div>
+          </div>
+        </div>
+
+        <!-- accommodation -->
+        <sc-if value="{{ day.hasStay }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;border-radius:14px;background:linear-gradient(180deg,#f6efe1,#efe6d3);border:1px solid rgba(31,58,82,.14);padding:12px 13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+              <div style="display:flex;align-items:center;gap:7px;">
+                <span style="flex:none;width:22px;height:22px;border-radius:7px;background:{{ day.accent }};display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;">⌂</span>
+                <span style="font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:{{ day.accent }};font-weight:700;">Accommodation</span>
+              </div>
+              <button onClick="{{ day.removeStay }}" style="border:none;background:transparent;color:#b09a86;font-size:12px;cursor:pointer;">remove</button>
+            </div>
+            <div contenteditable="true" onBlur="{{ day.onStayName }}" style="font-family:'Shippori Mincho B1',serif;font-weight:700;font-size:15px;color:#241f1b;">{{ day.stay.name }}</div>
+            <div contenteditable="true" onBlur="{{ day.onStayAddr }}" style="font-size:12px;color:#6a5f52;line-height:1.45;margin-top:2px;">{{ day.stay.address }}</div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;align-items:center;">
+              <span style="font-size:10.5px;color:#8a7d6c;background:#fffdf7;border:1px solid rgba(0,0,0,.06);border-radius:20px;padding:3px 9px;">In <b contenteditable="true" onBlur="{{ day.onStayIn }}" style="color:#241f1b;">{{ day.stay.checkin }}</b></span>
+              <span style="font-size:10.5px;color:#8a7d6c;background:#fffdf7;border:1px solid rgba(0,0,0,.06);border-radius:20px;padding:3px 9px;">Out <b contenteditable="true" onBlur="{{ day.onStayOut }}" style="color:#241f1b;">{{ day.stay.checkout }}</b></span>
+              <span style="font-size:10.5px;color:#fff;background:{{ day.accent }};border-radius:20px;padding:3px 10px;letter-spacing:.5px;font-family:monospace;">{{ day.stay.code }}</span>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ day.noStay }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ day.addStay }}" style="margin-top:12px;width:100%;border:1px dashed rgba(31,58,82,.3);background:rgba(31,58,82,.04);color:#5f7386;border-radius:12px;padding:9px;font-size:12.5px;cursor:pointer;font-family:inherit;">⌂  Add accommodation</button>
+        </sc-if>
+
+        <!-- plan -->
+        <div style="margin-top:16px;">
+          <div style="font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#a2907a;font-weight:700;margin-bottom:2px;">Plan</div>
+          <sc-if value="{{ day.noItems }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12px;color:#b0a48f;padding:6px 0;font-style:italic;">Nothing pinned yet — add a suggestion below.</div>
+          </sc-if>
+          <sc-for list="{{ day.items }}" as="item" hint-placeholder-count="0">
+            <div style="display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(36,31,27,.07);">
+              <span contenteditable="true" onBlur="{{ item.onTime }}" style="flex:none;min-width:34px;font-size:11px;color:#fff;background:{{ day.accent }};border-radius:6px;padding:3px 6px;text-align:center;font-weight:600;">{{ item.time }}</span>
+              <span contenteditable="true" onBlur="{{ item.onText }}" style="flex:1;font-size:13.5px;line-height:1.4;color:#332e28;">{{ item.text }}</span>
+              <span contenteditable="true" onBlur="{{ item.onCost }}" style="flex:none;font-size:11px;color:#8a6a31;font-weight:600;">{{ item.cost }}</span>
+              <button onClick="{{ item.remove }}" style="flex:none;border:none;background:transparent;color:#cbb9a4;font-size:15px;line-height:1;cursor:pointer;padding:0 2px;">×</button>
+            </div>
+          </sc-for>
+          <button onClick="{{ day.addItem }}" style="margin-top:9px;border:none;background:transparent;color:{{ day.accent }};font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;padding:2px 0;">+ Add to plan</button>
+        </div>
+
+        <!-- suggestions -->
+        <sc-if value="{{ day.hasSug }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;padding-top:14px;border-top:1px dashed rgba(36,31,27,.14);">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;">
+              <span style="font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#a2907a;font-weight:700;">Suggested stops</span>
+              <span style="font-size:10px;color:#bcae98;">budget · walk & metro</span>
+            </div>
+            <sc-for list="{{ day.suggestions }}" as="s" hint-placeholder-count="3">
+              <div class="lift" style="display:flex;gap:11px;align-items:center;background:#fbf6ea;border-radius:13px;padding:10px 11px;margin-top:8px;box-shadow:0 5px 12px -8px rgba(60,42,30,.5),inset 0 1px 0 rgba(255,255,255,.6);">
+                <span style="flex:none;width:44px;font-size:9.5px;font-weight:700;color:#fff;background:{{ s.tColor }};border-radius:9px;padding:6px 0;text-align:center;letter-spacing:.3px;line-height:1.2;">{{ s.tShort }}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-family:'Shippori Mincho B1',serif;font-weight:600;font-size:14px;color:#241f1b;">{{ s.name }}</div>
+                  <div style="font-size:11.5px;color:#7d7161;line-height:1.35;margin-top:1px;">{{ s.desc }}</div>
+                </div>
+                <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;">
+                  <span style="font-size:10px;font-weight:700;color:{{ s.cColor }};background:{{ s.cBg }};border-radius:20px;padding:2px 8px;white-space:nowrap;">{{ s.cost }}</span>
+                  <button onClick="{{ s.add }}" style="width:26px;height:26px;border-radius:50%;border:none;background:{{ day.accent }};color:#fff;font-size:16px;line-height:1;cursor:pointer;box-shadow:0 4px 8px -3px {{ day.accentShadow }};">+</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- footer -->
+  <div style="text-align:center;margin-top:26px;color:#8a7d6c;">
+    <div style="font-family:'Yuji Syuku',serif;font-size:22px;color:#c8462f;">良い旅を</div>
+    <div style="font-size:11.5px;margin-top:4px;">Have a good trip · edits save on this device</div>
+    <button onClick="{{ resetAll }}" style="margin-top:12px;border:1px solid rgba(36,31,27,.15);background:transparent;color:#8a7d6c;border-radius:20px;padding:6px 16px;font-size:11.5px;cursor:pointer;font-family:inherit;">Reset to original plan</button>
+  </div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const KEY = 'jp-itin-2026-v1';
+
+const CITY = {
+  Tokyo: { accent:'#1f3a52', accentDark:'#132635', accentShadow:'rgba(31,58,82,.5)' },
+  Kyoto: { accent:'#c8462f', accentDark:'#8f2e1d', accentShadow:'rgba(200,70,47,.45)' },
+  Nara:  { accent:'#b08843', accentDark:'#7f5f28', accentShadow:'rgba(176,136,67,.45)' },
+};
+
+function transitStyle(t){
+  const s = (t||'').toLowerCase();
+  if (s.includes('walk')) return { c:'#5f7a58', label:'Walk' };
+  if (s.includes('metro')) return { c:'#1f3a52', label:'Metro' };
+  if (s.includes('shink')) return { c:'#c8462f', label:'Shink.' };
+  if (s.includes('jr')||s.includes('kinte')) return { c:'#c8462f', label:'JR' };
+  if (s.includes('bus')) return { c:'#b08843', label:'Bus' };
+  if (s.includes('yuri')||s.includes('rail')) return { c:'#6a7f9c', label:'Rail' };
+  return { c:'#6a7f9c', label: t || 'Transit' };
+}
+function costStyle(c){
+  if (!c || /free/i.test(c)) return { color:'#4f7a4a', bg:'#e6efe0', text: c||'Free' };
+  return { color:'#8a6a31', bg:'#f3e8cf', text:c };
+}
+
+class Component extends DCLogic {
+  state = { days: null };
+
+  componentDidMount(){
+    let days = null;
+    try { const raw = localStorage.getItem(KEY); if (raw) days = JSON.parse(raw); } catch(e){}
+    if (days && days.length) { this.setState({ days }); return; }
+    import('./itinerary-data.js').then(m => {
+      this.setState({ days: JSON.parse(JSON.stringify(m.DEFAULT_DAYS)) });
+    });
+  }
+
+  uid(){ return 'n' + Math.random().toString(36).slice(2,8); }
+
+  save(days){ try { localStorage.setItem(KEY, JSON.stringify(days)); } catch(e){} this.setState({ days }); }
+  mutate(fn){ const days = this.state.days.map(d => ({...d})); fn(days); this.save(days); }
+  findDay(days,id){ return days.find(d => d.id===id); }
+
+  setField(id,k,v){ this.mutate(days => { const d=this.findDay(days,id); if(d) d[k]=v; }); }
+  setStay(id,k,v){ this.mutate(days => { const d=this.findDay(days,id); if(d&&d.stay){ d.stay={...d.stay,[k]:v}; } }); }
+  addStay(id){ this.mutate(days => { const d=this.findDay(days,id); if(d) d.stay={ name:'Our stay', address:'Tap to add the address', code:'', checkin:d.date, checkout:'' }; }); }
+  removeStay(id){ this.mutate(days => { const d=this.findDay(days,id); if(d) d.stay=null; }); }
+
+  addItem(id){ this.mutate(days => { const d=this.findDay(days,id); if(d) d.items=[...d.items,{ id:this.uid(), time:'', text:'New activity', cost:'' }]; }); }
+  setItem(id,iid,k,v){ this.mutate(days => { const d=this.findDay(days,id); if(d) d.items=d.items.map(x=> x.id===iid?{...x,[k]:v}:x); }); }
+  removeItem(id,iid){ this.mutate(days => { const d=this.findDay(days,id); if(d) d.items=d.items.filter(x=>x.id!==iid); }); }
+  addSug(id,s){ this.mutate(days => { const d=this.findDay(days,id); if(d) d.items=[...d.items,{ id:this.uid(), time:'', text:s.name, cost: (s.cost&&!/free/i.test(s.cost))?s.cost:'' }]; }); }
+
+  reset(){
+    if (!confirm('Reset the whole plan back to the original suggestions? Your edits will be lost.')) return;
+    localStorage.removeItem(KEY);
+    import('./itinerary-data.js').then(m => this.setState({ days: JSON.parse(JSON.stringify(m.DEFAULT_DAYS)) }));
+  }
+
+  txt(e){ return e.target.innerText.trim(); }
+
+  renderVals(){
+    const crew = [
+      {k:'A',bg:'#c8462f'},{k:'K',bg:'#1f3a52'},{k:'M',bg:'#b08843'},{k:'R',bg:'#5f7a58'},{k:'S',bg:'#6a7f9c'},
+    ];
+    if (!this.state.days) return { loading:true, days:[], crew, resetAll:()=>this.reset() };
+
+    const days = this.state.days.map(d => {
+      const c = CITY[d.city] || CITY.Tokyo;
+      const parts = (d.date||'').split(' ');
+      return {
+        ...d,
+        num: parts[1]||'', mon: parts[0]||'',
+        accent:c.accent, accentDark:c.accentDark, accentShadow:c.accentShadow,
+        hasStay: !!d.stay, noStay: !d.stay,
+        noItems: d.items.length===0,
+        hasSug: d.suggestions.length>0,
+        onTitle:(e)=>this.setField(d.id,'title',this.txt(e)),
+        onArea:(e)=>this.setField(d.id,'area',this.txt(e)),
+        onStayName:(e)=>this.setStay(d.id,'name',this.txt(e)),
+        onStayAddr:(e)=>this.setStay(d.id,'address',this.txt(e)),
+        onStayIn:(e)=>this.setStay(d.id,'checkin',this.txt(e)),
+        onStayOut:(e)=>this.setStay(d.id,'checkout',this.txt(e)),
+        addStay:()=>this.addStay(d.id),
+        removeStay:()=>this.removeStay(d.id),
+        addItem:()=>this.addItem(d.id),
+        items: d.items.map(it => ({
+          ...it,
+          onTime:(e)=>this.setItem(d.id,it.id,'time',this.txt(e)),
+          onText:(e)=>this.setItem(d.id,it.id,'text',this.txt(e)),
+          onCost:(e)=>this.setItem(d.id,it.id,'cost',this.txt(e)),
+          remove:()=>this.removeItem(d.id,it.id),
+        })),
+        suggestions: d.suggestions.map(s => {
+          const t = transitStyle(s.transit); const co = costStyle(s.cost);
+          return { ...s, tShort:t.label, tColor:t.c, cost:co.text, cColor:co.color, cBg:co.bg, add:()=>this.addSug(d.id,s) };
+        }),
+      };
+    });
+    return { loading:false, days, crew, resetAll:()=>this.reset() };
+  }
+}
+</script>
+</body>
+</html>

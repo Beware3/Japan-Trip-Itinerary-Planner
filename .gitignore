@@ -1,0 +1,11 @@
+# OS files
+.DS_Store
+Thumbs.db
+.thumbnail
+
+# Data files
+*.xlsx
+uploads/
+
+# Original DC files (index.html is the deploy version)
+Japan Trip.dc.html

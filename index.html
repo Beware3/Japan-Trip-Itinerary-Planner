@@ -168,6 +168,73 @@
     <button onClick="{{ resetAll }}" style="margin-top:12px;border:1px solid rgba(36,31,27,.15);background:transparent;color:#8a7d6c;border-radius:20px;padding:6px 16px;font-size:11.5px;cursor:pointer;font-family:inherit;">Reset to original plan</button>
   </div>
 
+  <!-- AI Chat Widget -->
+  <div style="position:fixed;bottom:24px;right:24px;z-index:9999;font-family:'Zen Kaku Gothic New',sans-serif;">
+    <!-- Chat Bubble Button -->
+    <button onClick="{{ toggleChat }}" style="width:56px;height:56px;border-radius:50%;background:#c8462f;color:#fff;border:none;box-shadow:0 6px 16px rgba(200,70,47,0.35);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform 0.2s;">
+      <sc-if value="{{ chatOpen }}" hint-placeholder-val="{{ false }}">✕</sc-if>
+      <sc-if value="{{ chatClosed }}" hint-placeholder-val="{{ true }}">✦</sc-if>
+    </button>
+
+    <!-- Chat Panel -->
+    <sc-if value="{{ chatOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;bottom:70px;right:0;width:min(380px, calc(100vw - 40px));height:500px;background:rgba(255,253,247,0.96);backdrop-filter:blur(8px);border-radius:24px;border:1px solid rgba(200,70,47,0.15);box-shadow:0 12px 32px rgba(60,42,30,0.2);display:flex;flex-direction:column;overflow:hidden;">
+        <!-- Header -->
+        <div style="padding:16px 20px;background:linear-gradient(135deg,#c8462f,#a13320);color:#fff;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.06);flex:none;">
+          <div style="display:flex;flex-direction:column;">
+            <span style="font-family:'Shippori Mincho B1',serif;font-weight:700;font-size:16px;">AI Travel Assistant</span>
+            <span style="font-size:10px;opacity:0.8;margin-top:1px;">Japan Tour Guide</span>
+          </div>
+          <button onClick="{{ toggleSettings }}" style="background:transparent;border:none;color:#fff;font-size:16px;cursor:pointer;opacity:0.8;">⚙</button>
+        </div>
+
+        <!-- Settings Panel -->
+        <sc-if value="{{ showSettings }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px;background:#f3efe2;border-bottom:1px solid rgba(200,70,47,0.1);font-size:12px;flex:none;">
+            <div style="font-weight:700;margin-bottom:6px;color:#241f1b;">Gemini API Key Setup</div>
+            <div style="color:#6a5f52;margin-bottom:10px;line-height:1.45;">Paste your Google Gemini API key to enable the AI assistant. Get a free key from <a href="https://aistudio.google.com/" target="_blank" style="color:#c8462f;text-decoration:underline;">Google AI Studio</a>.</div>
+            <input type="password" placeholder="AIzaSy..." value="{{ apiKey }}" onChange="{{ onApiKeyChange }}" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #cbb9a4;background:#fff;margin-bottom:8px;font-size:12px;font-family:monospace;" />
+            <button onClick="{{ saveApiKey }}" style="width:100%;padding:8px;background:#c8462f;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Save Key</button>
+          </div>
+        </sc-if>
+
+        <!-- Messages list -->
+        <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth;">
+          <sc-for list="{{ messages }}" as="msg">
+            <div style="display:flex;flex-direction:column;align-items:{{ msg.align }};">
+              <span style="font-size:9.5px;color:#8a7d6c;margin-bottom:3px;margin-left:{{ msg.marginLeft }};margin-right:{{ msg.marginRight }};">{{ msg.sender }}</span>
+              <div style="max-width:85%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.45;background:{{ msg.bg }};color:{{ msg.color }};border-bottom-left-radius:{{ msg.botCorner }};border-bottom-right-radius:{{ msg.userCorner }};border:1px solid {{ msg.border }};white-space:pre-wrap;">{{ msg.text }}</div>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{ isTyping }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;">
+              <span style="font-size:9.5px;color:#8a7d6c;margin-bottom:3px;margin-left:4px;">AI Guide</span>
+              <div style="padding:10px 14px;border-radius:16px;font-size:13px;background:#efe6d3;color:#241f1b;border-bottom-left-radius:0;border:1px solid rgba(200,70,47,0.06);display:flex;align-items:center;gap:4px;">
+                Thinking...
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <!-- Quick Chips -->
+        <sc-if value="{{ hasKey }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:8px 12px;display:flex;gap:6px;overflow-x:auto;background:transparent;border-top:1px solid rgba(36,31,27,0.04);white-space:nowrap;flex:none;">
+            <button onClick="{{ askWhatsNext }}" style="flex:none;font-size:11px;color:#c8462f;background:rgba(200,70,47,0.06);border:1px solid rgba(200,70,47,0.15);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:inherit;">What should we do now?</button>
+            <button onClick="{{ askFoodSuggestions }}" style="flex:none;font-size:11px;color:#c8462f;background:rgba(200,70,47,0.06);border:1px solid rgba(200,70,47,0.15);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:inherit;">Suggest dinner spots</button>
+            <button onClick="{{ askTransitHelp }}" style="flex:none;font-size:11px;color:#c8462f;background:rgba(200,70,47,0.06);border:1px solid rgba(200,70,47,0.15);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:inherit;">Transit/Train help</button>
+          </div>
+        </sc-if>
+
+        <!-- Input Bar -->
+        <div style="padding:12px;background:#fbfaf5;border-top:1px solid rgba(36,31,27,0.08);display:flex;gap:8px;flex:none;">
+          <input type="text" placeholder="{{ inputPlaceholder }}" value="{{ inputText }}" onChange="{{ onInputChange }}" onKeyDown="{{ handleInputKey }}" disabled="{{ inputDisabled }}" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid #cbb9a4;background:#fff;font-size:13px;font-family:inherit;outline:none;" />
+          <button onClick="{{ sendChat }}" disabled="{{ sendDisabled }}" style="padding:0 16px;background:{{ sendBtnBg }};color:#fff;border:none;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;transition:background 0.2s;">Send</button>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
 </div>
 </div>
 </x-dc>
@@ -208,7 +275,17 @@ function costStyle(c){
 }
 
 class Component extends DCLogic {
-  state = { days: null };
+  state = {
+    days: null,
+    chatOpen: false,
+    showSettings: false,
+    inputText: '',
+    apiKey: localStorage.getItem('gemini_api_key') || '',
+    messages: [
+      { sender: 'AI Guide', text: 'Konnichiwa! I am your Japan Travel Assistant. Ask me anything about your itinerary or what to do next today!', isBot: true }
+    ],
+    isTyping: false
+  };
 
   componentDidMount(){
     const ref = db.ref('itinerary');
@@ -267,6 +344,133 @@ class Component extends DCLogic {
     });
   }
 
+  onInputChange(e){
+    this.setState({ inputText: e.target.value });
+  }
+
+  onApiKeyChange(e){
+    this.setState({ apiKey: e.target.value });
+  }
+
+  saveApiKey(){
+    const key = this.state.apiKey.trim();
+    localStorage.setItem('gemini_api_key', key);
+    this.setState({ showSettings: false });
+  }
+
+  toggleChat(){
+    this.setState({ chatOpen: !this.state.chatOpen, showSettings: false });
+  }
+
+  toggleSettings(){
+    this.setState({ showSettings: !this.state.showSettings });
+  }
+
+  handleInputKey(e){
+    if (e.key === 'Enter') {
+      this.sendChat();
+    }
+  }
+
+  sendChat(){
+    const text = this.state.inputText.trim();
+    if (!text || this.state.isTyping) return;
+
+    const userMessage = { sender: 'You', text, isBot: false };
+    const newMessages = [...this.state.messages, userMessage];
+
+    this.setState({
+      messages: newMessages,
+      inputText: '',
+      isTyping: true
+    });
+
+    this.callGemini(text, newMessages);
+  }
+
+  askWhatsNext(){
+    this.setState({ inputText: "What should we do now?" });
+    setTimeout(() => this.sendChat(), 50);
+  }
+
+  askFoodSuggestions(){
+    this.setState({ inputText: "Any good food or dinner recommendations nearby?" });
+    setTimeout(() => this.sendChat(), 50);
+  }
+
+  askTransitHelp(){
+    this.setState({ inputText: "How do we get to our stops today via train or metro?" });
+    setTimeout(() => this.sendChat(), 50);
+  }
+
+  callGemini(text, history){
+    const apiKey = this.state.apiKey;
+    if (!apiKey) {
+      this.setState({
+        isTyping: false,
+        messages: [...history, { sender: 'AI Guide', text: 'Error: API Key is missing. Please click the gear ⚙ icon in the header and paste your Gemini API key.', isBot: true }]
+      });
+      return;
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const systemPrompt = `You are a friendly, helpful AI Japan Tour Guide helping group members navigate their trip.
+You have access to their live, collaborative itinerary and the current local date/time.
+
+Rules for your responses:
+1. Suggest activities or answers based on their live itinerary, remaining time of day, and location.
+2. IMPORTANT: If the member's request is vague, broad, or underspecified (e.g. "what should we do today?" or "where should we go?"), ALWAYS ask clarifying questions first to understand their current day, vibe, budget, or how they feel. Do not just make assumptions. Ask back!
+3. Keep responses relatively concise, helpful, and clear.
+4. You are speaking to group members (Party of 5).
+
+Live Itinerary:
+${JSON.stringify(this.state.days)}
+
+Current Date/Time:
+${new Date().toLocaleString()}
+`;
+
+    const contents = [
+      {
+        role: 'user',
+        parts: [{ text: systemPrompt }]
+      },
+      ...history.map(msg => ({
+        role: msg.isBot ? 'model' : 'user',
+        parts: [{ text: msg.text }]
+      }))
+    ];
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ contents })
+    })
+    .then(r => r.json())
+    .then(data => {
+      let reply = 'Sorry, I encountered an error processing that.';
+      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+        reply = data.candidates[0].content.parts[0].text;
+      } else if (data.error) {
+        reply = `Error: ${data.error.message}`;
+      }
+      this.setState({
+        isTyping: false,
+        messages: [...history, { sender: 'AI Guide', text: reply, isBot: true }]
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      this.setState({
+        isTyping: false,
+        messages: [...history, { sender: 'AI Guide', text: `Failed to connect: ${err.message}`, isBot: true }]
+      });
+    });
+  }
+
   txt(e){ return e.target.innerText.trim(); }
 
   renderVals(){
@@ -274,6 +478,24 @@ class Component extends DCLogic {
       {k:'A',bg:'#c8462f'},{k:'K',bg:'#1f3a52'},{k:'M',bg:'#b08843'},{k:'R',bg:'#5f7a58'},{k:'S',bg:'#6a7f9c'},
     ];
     if (!this.state.days) return { loading:true, days:[], crew, resetAll:()=>this.reset() };
+
+    const hasKey = !!this.state.apiKey;
+    const sendDisabled = this.state.isTyping || !this.state.inputText.trim() || !hasKey;
+    const sendBtnBg = sendDisabled ? '#d5c4b1' : '#c8462f';
+    const inputDisabled = this.state.isTyping || !hasKey;
+    const inputPlaceholder = hasKey ? "Ask something about today's plan..." : "Set API Key in settings ⚙ first";
+
+    const messages = this.state.messages.map(msg => ({
+      ...msg,
+      align: msg.isBot ? 'flex-start' : 'flex-end',
+      bg: msg.isBot ? '#efe6d3' : '#c8462f',
+      color: msg.isBot ? '#241f1b' : '#fff',
+      border: msg.isBot ? 'rgba(200,70,47,0.06)' : 'transparent',
+      botCorner: msg.isBot ? '0' : '16px',
+      userCorner: msg.isBot ? '16px' : '0',
+      marginLeft: msg.isBot ? '4px' : '0px',
+      marginRight: msg.isBot ? '0px' : '4px',
+    }));
 
     const days = this.state.days.map(d => {
       if (!d) return null;
@@ -308,7 +530,7 @@ class Component extends DCLogic {
         }),
       };
     }).filter(Boolean);
-    return { loading:false, days, crew, resetAll:()=>this.reset() };
+    return { loading:false, days, crew, resetAll:()=>this.reset(), chatOpen:this.state.chatOpen, chatClosed:!this.state.chatOpen, showSettings:this.state.showSettings, apiKey:this.state.apiKey, messages, isTyping:this.state.isTyping, inputText:this.state.inputText, hasKey, sendDisabled, sendBtnBg, inputDisabled, inputPlaceholder, toggleChat:()=>this.toggleChat(), toggleSettings:()=>this.toggleSettings(), onInputChange:(e)=>this.onInputChange(e), onApiKeyChange:(e)=>this.onApiKeyChange(e), saveApiKey:()=>this.saveApiKey(), handleInputKey:(e)=>this.handleInputKey(e), sendChat:()=>this.sendChat(), askWhatsNext:()=>this.askWhatsNext(), askFoodSuggestions:()=>this.askFoodSuggestions(), askTransitHelp:()=>this.askTransitHelp() };
   }
 }
 </script>

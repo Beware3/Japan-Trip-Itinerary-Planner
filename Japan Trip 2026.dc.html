@@ -162,10 +162,17 @@
   </div>
 
   <!-- footer -->
-  <div style="text-align:center;margin-top:26px;color:#8a7d6c;">
+  <div style="text-align:center;margin-top:26px;color:#8a7d6c;padding-bottom:30px;">
     <div style="font-family:'Yuji Syuku',serif;font-size:22px;color:#c8462f;">良い旅を</div>
-    <div style="font-size:11.5px;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;">Have a good trip <span style="display:inline-block;width:6px;height:6px;background:#4f7a4a;border-radius:50%;box-shadow:0 0 6px #4f7a4a;"></span> Live Sync Enabled</div>
-    <button onClick="{{ resetAll }}" style="margin-top:12px;border:1px solid rgba(36,31,27,.15);background:transparent;color:#8a7d6c;border-radius:20px;padding:6px 16px;font-size:11.5px;cursor:pointer;font-family:inherit;">Reset to original plan</button>
+    <div style="font-size:11.5px;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:14px;">Have a good trip <span style="display:inline-block;width:6px;height:6px;background:#4f7a4a;border-radius:50%;box-shadow:0 0 6px #4f7a4a;"></span> Live Sync Enabled</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button onClick="{{ exportToCSV }}" style="border:1px solid rgba(36,31,27,.15);background:#f3efe2;color:#241f1b;border-radius:20px;padding:6px 16px;font-size:11.5px;cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:4px;">📥 Export to Excel</button>
+      <label style="border:1px solid rgba(36,31,27,.15);background:#f3efe2;color:#241f1b;border-radius:20px;padding:6px 16px;font-size:11.5px;cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:4px;">
+        📤 Import Excel CSV
+        <input type="file" accept=".csv" onChange="{{ importFromCSV }}" style="display:none;" />
+      </label>
+      <button onClick="{{ resetAll }}" style="border:1px solid rgba(36,31,27,.15);background:transparent;color:#8a7d6c;border-radius:20px;padding:6px 16px;font-size:11.5px;cursor:pointer;font-family:inherit;">Reset to original plan</button>
+    </div>
   </div>
 
   <!-- AI Chat Widget -->
@@ -356,6 +363,212 @@ class Component extends DCLogic {
       this.setState({ days: defaults });
       db.ref('itinerary').set(defaults);
     });
+  }
+
+  exportToCSV(){
+    const headers = [
+      "Day", "Date", "City", "Area", "Title",
+      "StayName", "StayAddress", "StayCode", "StayCheckin", "StayCheckout",
+      "RowType", "TimeOrTransit", "TextOrName", "Description", "Cost"
+    ];
+
+    const escape = (val) => {
+      if (val === undefined || val === null) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+
+    let csvContent = headers.join(',') + '\n';
+
+    this.state.days.forEach((day, index) => {
+      const dayNum = index + 1;
+      const date = day.date || '';
+      const city = day.city || '';
+      const area = day.area || '';
+      const title = day.title || '';
+
+      const stayName = day.stay ? day.stay.name : '';
+      const stayAddr = day.stay ? day.stay.address : '';
+      const stayCode = day.stay ? day.stay.code : '';
+      const stayIn = day.stay ? day.stay.checkin : '';
+      const stayOut = day.stay ? day.stay.checkout : '';
+
+      const baseCols = [
+        escape(dayNum), escape(date), escape(city), escape(area), escape(title),
+        escape(stayName), escape(stayAddr), escape(stayCode), escape(stayIn), escape(stayOut)
+      ];
+
+      const items = day.items || [];
+      const suggestions = day.suggestions || [];
+
+      if (items.length === 0 && suggestions.length === 0) {
+        csvContent += [...baseCols, 'Info', '', '', '', ''].join(',') + '\n';
+      } else {
+        items.forEach(it => {
+          csvContent += [...baseCols, 'Plan', escape(it.time), escape(it.text), '', escape(it.cost)].join(',') + '\n';
+        });
+        suggestions.forEach(s => {
+          csvContent += [...baseCols, 'Suggestion', escape(s.transit), escape(s.name), escape(s.desc), escape(s.cost)].join(',') + '\n';
+        });
+      }
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", "japan_trip_itinerary.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  importFromCSV(e){
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result;
+        const rows = this.parseCSV(text);
+        if (rows.length < 2) throw new Error("CSV file is empty or invalid.");
+
+        const dataRows = rows.slice(1).filter(r => r.length >= 5 && r[0]);
+
+        const daysGrouped = {};
+        dataRows.forEach(row => {
+          const dayNum = row[0].trim();
+          if (!dayNum) return;
+          if (!daysGrouped[dayNum]) daysGrouped[dayNum] = [];
+          daysGrouped[dayNum].push(row);
+        });
+
+        const newDays = [];
+        const dayKeys = Object.keys(daysGrouped).sort((a,b) => parseInt(a,10) - parseInt(b,10));
+
+        dayKeys.forEach(dayKey => {
+          const group = daysGrouped[dayKey];
+          const firstRow = group[0];
+
+          const date = firstRow[1] || '';
+          const city = firstRow[2] || 'Tokyo';
+          const area = firstRow[3] || '';
+          const title = firstRow[4] || '';
+
+          const stayName = firstRow[5] || '';
+          const stayAddr = firstRow[6] || '';
+          const stayCode = firstRow[7] || '';
+          const stayIn = firstRow[8] || '';
+          const stayOut = firstRow[9] || '';
+
+          const stay = stayName ? {
+            name: stayName,
+            address: stayAddr,
+            code: stayCode,
+            checkin: stayIn,
+            checkout: stayOut
+          } : null;
+
+          const items = [];
+          const suggestions = [];
+
+          group.forEach(row => {
+            const rowType = (row[10] || '').trim().toLowerCase();
+            const timeOrTransit = row[11] || '';
+            const textOrName = row[12] || '';
+            const desc = row[13] || '';
+            const cost = row[14] || '';
+
+            if (rowType === 'plan' && textOrName) {
+              items.push({
+                id: 'n' + Math.random().toString(36).slice(2,8),
+                time: timeOrTransit,
+                text: textOrName,
+                cost: cost
+              });
+            } else if (rowType === 'suggestion' && textOrName) {
+              suggestions.push({
+                id: 'n' + Math.random().toString(36).slice(2,8),
+                transit: timeOrTransit,
+                name: textOrName,
+                desc: desc,
+                cost: cost
+              });
+            }
+          });
+
+          newDays.push({
+            id: 'd' + dayKey,
+            date,
+            city,
+            area,
+            title,
+            stay,
+            items,
+            suggestions
+          });
+        });
+
+        if (newDays.length === 0) throw new Error("Could not find any valid day rows.");
+
+        if (confirm(`Successfully parsed ${newDays.length} days from CSV. Do you want to overwrite your live itinerary with this data?`)) {
+          this.setState({ days: newDays });
+          db.ref('itinerary').set(newDays);
+        }
+      } catch (err) {
+        alert("Error parsing CSV: " + err.message + "\n\nPlease ensure your CSV matches the template format downloaded from 'Export to Excel'.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  parseCSV(text) {
+    const result = [];
+    let row = [];
+    let col = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+      if (inQuotes) {
+        if (char === '"') {
+          if (nextChar === '"') {
+            col += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          col += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === ',') {
+          row.push(col);
+          col = '';
+        } else if (char === '\n' || char === '\r') {
+          if (char === '\r' && nextChar === '\n') {
+            i++;
+          }
+          row.push(col);
+          result.push(row);
+          row = [];
+          col = '';
+        } else {
+          col += char;
+        }
+      }
+    }
+    if (row.length > 0 || col !== '') {
+      row.push(col);
+      result.push(row);
+    }
+    return result;
   }
 
   onInputChange(e){
@@ -599,7 +812,7 @@ ${new Date().toLocaleString()}
         }),
       };
     }).filter(Boolean);
-    return { loading:false, days, crew, resetAll:()=>this.reset(), chatOpen:this.state.chatOpen, chatClosed:!this.state.chatOpen, showSettings:this.state.showSettings, apiKey:this.state.apiKey, messages, isTyping:this.state.isTyping, inputText:this.state.inputText, hasKey, showChips, sendDisabled, sendBtnBg, inputDisabled, inputPlaceholder, toggleChat:()=>this.toggleChat(), toggleSettings:()=>this.toggleSettings(), onInputChange:(e)=>this.onInputChange(e), onApiKeyChange:(e)=>this.onApiKeyChange(e), saveApiKey:()=>this.saveApiKey(), handleInputKey:(e)=>this.handleInputKey(e), sendChat:()=>this.sendChat(), askWhatsNext:()=>this.askWhatsNext(), askFoodSuggestions:()=>this.askFoodSuggestions(), askTransitHelp:()=>this.askTransitHelp() };
+    return { loading:false, days, crew, resetAll:()=>this.reset(), chatOpen:this.state.chatOpen, chatClosed:!this.state.chatOpen, showSettings:this.state.showSettings, apiKey:this.state.apiKey, messages, isTyping:this.state.isTyping, inputText:this.state.inputText, hasKey, showChips, sendDisabled, sendBtnBg, inputDisabled, inputPlaceholder, toggleChat:()=>this.toggleChat(), toggleSettings:()=>this.toggleSettings(), onInputChange:(e)=>this.onInputChange(e), onApiKeyChange:(e)=>this.onApiKeyChange(e), saveApiKey:()=>this.saveApiKey(), handleInputKey:(e)=>this.handleInputKey(e), sendChat:()=>this.sendChat(), askWhatsNext:()=>this.askWhatsNext(), askFoodSuggestions:()=>this.askFoodSuggestions(), askTransitHelp:()=>this.askTransitHelp(), exportToCSV:()=>this.exportToCSV(), importFromCSV:(e)=>this.importFromCSV(e) };
   }
 }
 </script>
